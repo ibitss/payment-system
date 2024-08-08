@@ -32,6 +32,7 @@ public class JWTService {
     public String generateJWT(LocalUser user) {
         return JWT.create()
                 .withClaim(USERNAME_KEY, user.getEmail())
+                .withClaim("roles", user.getRoles().stream().toList())
                 .withIssuer(issuer)
                 .withExpiresAt(new Date(System.currentTimeMillis() + (1000 * expiryInSeconds)))
                 .sign(algorithm);

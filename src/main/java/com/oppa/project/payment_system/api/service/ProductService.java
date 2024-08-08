@@ -1,6 +1,7 @@
 package com.oppa.project.payment_system.api.service;
 
 import com.oppa.project.payment_system.api.exception.ProductAlreadyExistsException;
+import com.oppa.project.payment_system.api.model.dto.ProductBody;
 import com.oppa.project.payment_system.api.model.entity.Product;
 import com.oppa.project.payment_system.api.model.repository.ProductDAO;
 import org.springframework.stereotype.Service;
@@ -21,15 +22,15 @@ public class ProductService {
         return productDAO.findAll();
     }
 
-    public Product createProduct(Product product) throws ProductAlreadyExistsException {
-        Optional<Product> opProduct = productDAO.findByNameIgnoreCase(product.getName());
+    public Product createProduct(ProductBody productBody) throws ProductAlreadyExistsException {
+        Optional<Product> opProduct = productDAO.findByNameIgnoreCase(productBody.getName());
         if (opProduct.isPresent()) {
             throw new ProductAlreadyExistsException();
         }
         Product newProduct = new Product();
-        newProduct.setName(product.getName());
-        newProduct.setMinValue(product.getMaxValue());
-        newProduct.setMaxValue(product.getMaxValue());
+        newProduct.setName(productBody.getName());
+        newProduct.setMinValue(productBody.getMaxValue());
+        newProduct.setMaxValue(productBody.getMaxValue());
         return productDAO.save(newProduct);
     }
 

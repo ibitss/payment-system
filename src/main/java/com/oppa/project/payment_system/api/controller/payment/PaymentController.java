@@ -1,19 +1,21 @@
 package com.oppa.project.payment_system.api.controller.payment;
 
+import com.oppa.project.payment_system.api.exception.PaymentProcessingException;
 import com.oppa.project.payment_system.api.model.dto.PaymentBody;
 import com.oppa.project.payment_system.api.service.PaymentService;
 import com.oppa.project.payment_system.api.service.ProductService;
 import com.oppa.project.payment_system.api.model.entity.LocalUser;
 import com.oppa.project.payment_system.api.model.entity.Payment;
-import com.oppa.project.payment_system.api.enums.PaymentMethod;
-import com.oppa.project.payment_system.api.model.entity.Product;
 import jakarta.validation.Valid;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.validation.BindingResult;
+import org.springframework.validation.FieldError;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @RestController
@@ -32,28 +34,23 @@ public class PaymentController {
         return paymentService.getPaymentHistory(user);
     }
 
-    @PostMapping("/new")
+    @PostMapping
     public ResponseEntity processPayment(@AuthenticationPrincipal LocalUser user,
-                                         @Valid @RequestBody PaymentBody paymentBody) {
-        Optional<Product> opProduct = productService.findById(paymentBody.getProductId());
-        if (opProduct.isPresent()) {
-            if (paymentService.isProductAmountValid(paymentBody.getProductId(), paymentBody.getAmount())) {
-                paymentService.processPayment(user, opProduct.get(), paymentBody);
-                if (paymentBody.getPaymentMethod() == PaymentMethod.CARD) {
-                    if (paymentBody.getCcNumber() == null ||
-                            paymentBody.getCcExpiration() == null ||
-                            paymentBody.getCcCVV() == null) {
-                        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Credit card details are missing");
-                    }
-                    if (paymentService.isCCExpired(paymentBody.getCcExpiration())) {
-                        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Invalid Expiration Date");
-                    }
-                }
-            } else {
-                    return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Invalid amount");
+                                         @Valid @RequestBody PaymentBody paymentBody, BindingResult result) {
+        if (result.hasErrors()) {
+            // Capture validation errors
+            Map<String, String> errors = new HashMap<>();
+            for (FieldError error : result.getFieldErrors()) {
+                errors.put(error.getField(), error.getDefaultMessage());
             }
-            return ResponseEntity.ok().build();
+            return ResponseEntity.badRequest().body(errors);
         }
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Invalid product ID");
+        try {
+            paymentService.processPayment(user, paymentBody);
+            return ResponseEntity.ok().build();
+        } catch (PaymentProcessingException ex) {
+            return ResponseEntity.status(ex.getStatus()).body(ex.getMessage());
+        }
     }
+
 }

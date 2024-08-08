@@ -1,5 +1,6 @@
 package com.oppa.project.payment_system.api.controller.product;
 
+import com.oppa.project.payment_system.api.model.dto.ProductBody;
 import com.oppa.project.payment_system.api.service.ProductService;
 import com.oppa.project.payment_system.api.exception.ProductAlreadyExistsException;
 import com.oppa.project.payment_system.api.model.entity.Product;
@@ -27,13 +28,10 @@ public class ProductController {
         return productService.getProducts();
     }
 
-    //controller advice!!!
-    //new ar chirdeba
-    // ProductJSON maqvs dasamatebeli dto-ebshi
     @PostMapping("/new")
-    public ResponseEntity createProduct(@Valid @RequestBody Product product) {
+    public ResponseEntity createProduct(@Valid @RequestBody ProductBody productBody) {
         try {
-            productService.createProduct(product);
+            productService.createProduct(productBody);
             return ResponseEntity.ok().build();
         } catch (ProductAlreadyExistsException e) {
             return ResponseEntity.status(HttpStatus.CONFLICT).build();
@@ -41,25 +39,29 @@ public class ProductController {
 
     }
 
-    //put unda ikos
-    @PatchMapping("/{productId}")
-    public ResponseEntity<Product> editProduct(@Valid @RequestBody Product product,
+    @PutMapping("/{productId}")
+    public ResponseEntity<ProductBody> editProduct(@Valid @RequestBody ProductBody productBody,
                                                @PathVariable Long productId) {
-        if (product.getId() == productId) {
+        if (productBody.getId() == productId) {
             Optional<Product> opOriginalProduct = productService.findById(productId);
             if (opOriginalProduct.isPresent()) {
                 Product originalProduct = opOriginalProduct.get();
-                if (product.getName() != null) {
-                    originalProduct.setName(product.getName());
+                if (productBody.getName() != null) {
+                    originalProduct.setName(productBody.getName());
                 }
-                if (product.getMinValue() != null) {
-                    originalProduct.setMinValue(product.getMinValue());
+                if (productBody.getMinValue() != null) {
+                    originalProduct.setMinValue(productBody.getMinValue());
                 }
-                if (product.getMaxValue() != null) {
-                    originalProduct.setMaxValue(product.getMaxValue());
+                if (productBody.getMaxValue() != null) {
+                    originalProduct.setMaxValue(productBody.getMaxValue());
                 }
                 Product updatedProduct = productService.updateProduct(originalProduct);
-                return ResponseEntity.ok(updatedProduct);
+                ProductBody updatedProductBody = new ProductBody();
+                updatedProductBody.setId(updatedProduct.getId());
+                updatedProductBody.setName(updatedProduct.getName());
+                updatedProductBody.setMinValue(updatedProduct.getMinValue());
+                updatedProductBody.setMaxValue(updatedProduct.getMaxValue());
+                return ResponseEntity.ok(productBody);
             }
             return ResponseEntity.notFound().build();
         }
